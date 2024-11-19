@@ -16,13 +16,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            output_name: speedup-linux-amd64.zip
+            output_name: speedup
             asset_name: speedup-linux-amd64
           - os: windows-latest
-            output_name: speedup-windows-amd64.exe.zip
+            output_name: speedup.exe
             asset_name: speedup-windows-amd64.exe
           - os: macos-latest
-            output_name: speedup-darwin-amd64.zip
+            output_name: speedup
             asset_name: speedup-darwin-amd64
 
     steps:
