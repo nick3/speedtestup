@@ -3,53 +3,77 @@ name: Build and Release
 on:
   push:
     branches:
-      - main
+      - 'main'
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  build-and-release:
-    permissions:
-        contents: write
-        packages: write
-    runs-on: ubuntu-latest
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
-        goarch: [amd64]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            output_name: speedup
+            asset_name: speedup-linux-amd64
+          - os: windows-latest
+            output_name: speedup.exe
+            asset_name: speedup-windows-amd64.exe
+          - os: macos-latest
+            output_name: speedup
+            asset_name: speedup-darwin-amd64
+
     steps:
-      # ...existing code...
-      - name: 检出代码
-        uses: actions/checkout@v3
-      # ...existing code...
-      - name: 设置 Go 环境
-        uses: actions/setup-go@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-      # ...existing code...
-      - name: 编译程序
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: |
-          mkdir -p dist
-          go build -o dist/speedup-${GOOS}-${GOARCH}
-      # ...existing code...
-      - name: 创建发布
-        id: create_release
-        uses: actions/create-release@v1
+
+      - name: Build binary
+        run: go build -v -o ${{ matrix.output_name }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.output_name }}
+
+  release:
+    name: Create Release
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Delete existing release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete dev-build --cleanup-tag --yes || true
+
+      - name: Create new release
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: latest
-          release_name: Latest Build
-          draft: false
-          prerelease: false
-      # ...existing code...
-      - name: 上传构建产物
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/speedup-${{ matrix.goos }}-${{ matrix.goarch }}
-          asset_name: speedup-${{ matrix.goos }}-${{ matrix.goarch }}
-          asset_content_type: application/octet-stream
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: "artifacts/**/*"
+          body: |
+            **自动构建版本**
+            构建时间: ${{ github.event.head_commit.timestamp }}
+            提交信息: ${{ github.event.head_commit.message }}
+            提交SHA: ${{ github.sha }}
+          name: Development build
+          prerelease: true
+          removeArtifacts: true
+          tag: dev-build
