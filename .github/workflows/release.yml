@@ -10,18 +10,19 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [linux, windows, darwin]
+        goarch: [amd64]
         include:
-          - os: ubuntu-latest
+          - os: linux
             output_name: speedup-linux-amd64
             asset_name: speedup-linux-amd64
-          - os: windows-latest
+          - os: windows
             output_name: speedup-windows-amd64.exe
             asset_name: speedup-windows-amd64.exe
-          - os: macos-latest
+          - os: darwin
             output_name: speedup-darwin-amd64
             asset_name: speedup-darwin-amd64
 
@@ -35,6 +36,9 @@ jobs:
           go-version: '1.23'
 
       - name: Build binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.goarch }}
         run: go build -v -o ${{ matrix.output_name }}
 
       - name: Upload build artifact
