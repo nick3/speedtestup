@@ -39,7 +39,8 @@ jobs:
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -v -o ${{ matrix.output_name }}
+          CGO_ENABLED: 0  # 禁用 CGO，使用纯 Go 实现
+        run: go build -v -ldflags="-w -s" -o ${{ matrix.output_name }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
