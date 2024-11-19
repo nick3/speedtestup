@@ -1,0 +1,52 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+    steps:
+      # ...existing code...
+      - name: 检出代码
+        uses: actions/checkout@v3
+      # ...existing code...
+      - name: 设置 Go 环境
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+      # ...existing code...
+      - name: 编译程序
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p dist
+          go build -o dist/speedup-${GOOS}-${GOARCH}
+      # ...existing code...
+      - name: 创建发布
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: latest
+          release_name: Latest Build
+          draft: false
+          prerelease: false
+      # ...existing code...
+      - name: 上传构建产物
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/speedup-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: speedup-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
