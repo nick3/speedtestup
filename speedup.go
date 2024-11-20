@@ -3,19 +3,25 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/go-resty/resty/v2"
-
 	"github.com/robfig/cron/v3"
 )
 
 var lastIP string
-
-// 创建 Resty 客户端
 var client = resty.New()
 
-// 获取 IP 的函数
-func getIP() (string, error) {
+func init() {
+	// 配置日志格式：时间 文件：行号 日志内容
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	// 设置输出到标准输出
+	log.SetOutput(os.Stdout)
+}
+
+func getIPbyBaidu() (string, error) {
 	// 使用 Resty 发送 GET 请求
 	resp, err := client.R().
 		Get("https://qifu-api.baidubce.com/ip/local/geo/v1/district")
@@ -39,14 +45,94 @@ func getIP() (string, error) {
 		IP string `json:"ip"`
 	}
 	err = json.Unmarshal(resp.Body(), &data)
+	if data.Code == "DailyLimited" {
+		log.Printf("getIPbyBaidu: 获取 IP 失败，每日接口调用次数已达上限")
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("getIP: ", data)
+	log.Printf("getIPbyBaidu: %+v", data)
 	return data.IP, nil
 }
 
-// 用来提速的函数
+func getIPbyTencent() (string, error) {
+	// 使用 Resty 发送 GET 请求
+	resp, err := client.R().
+		Get("https://r.inews.qq.com/api/ip2city")
+	if err != nil {
+		return "", err
+	}
+	// 解析响应数据
+	var data struct {
+		Ret          int16  `json:"ret"`
+		ErrMsg       string `json:"errMsg"`
+		Country      string `json:"country"`
+		ProvCode     string `json:"provcode"`
+		CityCode     string `json:"citycode"`
+		DistrictCode string `json:"districtCode"`
+		Province     string `json:"province"`
+		ISP          string `json:"isp"`
+		City         string `json:"city"`
+		District     string `json:"district"`
+		IP           string `json:"ip"`
+		Callback     string `json:"callback"`
+	}
+	err = json.Unmarshal(resp.Body(), &data)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("getIPbyTencent: %+v", data)
+	return data.IP, nil
+}
+
+func getIPbyIpip() (string, error) {
+	// 使用 Resty 发送 GET 请求
+	resp, err := client.R().
+		Get("https://myip.ipip.net/json")
+	if err != nil {
+		return "", err
+	}
+	// 解析响应数据
+	var data struct {
+		Ret  string `json:"ret"`
+		Data struct {
+			IP string `json:"ip"`
+		} `json:"data"`
+	}
+	err = json.Unmarshal(resp.Body(), &data)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("getIPbyIpip: %+v", data)
+	return data.Data.IP, nil
+}
+
+func getIP() (string, error) {
+	// Create a slice of the getter functions
+	funcs := []func() (string, error){getIPbyBaidu, getIPbyTencent, getIPbyIpip}
+
+	// Randomly shuffle the functions
+	for i := len(funcs) - 1; i > 0; i-- {
+		j := time.Now().UnixNano() % int64(i+1)
+		funcs[i], funcs[j] = funcs[j], funcs[i]
+	}
+
+	// Try each function in the shuffled order
+	for i, f := range funcs {
+		ip, err := f()
+		if err != nil {
+			log.Printf("Error getting IP from method %d: %v", i+1, err)
+			continue
+		}
+		if ip != "" {
+			return ip, nil
+		}
+	}
+
+	return "", fmt.Errorf("无法通过任何一个方法获取 IP")
+}
+
 func speedup() (map[string]interface{}, error) {
 	resp, err := client.R().
 		Get("https://tisu-api.speedtest.cn/api/v2/speedup/reopen")
@@ -58,11 +144,10 @@ func speedup() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("speedup: ", data)
+	log.Printf("speedup: %+v", data)
 	return data, nil
 }
 
-// 用来检查是否提速成功的函数
 func checkSpeedup() (bool, error) {
 	resp, err := client.R().
 		Get("https://tisu-api-v3.speedtest.cn/speedUp/query")
@@ -80,14 +165,14 @@ func checkSpeedup() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("checkSpeedup: ", data)
+	log.Printf("checkSpeedup: %+v", data)
 	return data.Data.IndexInfo.CanSpeed == 1, nil
 }
 
 func checkIPChange() {
 	ip, err := getIP()
 	if err != nil {
-		fmt.Println("获取 IP 失败：", err)
+		log.Printf("获取 IP 失败：%v", err)
 		return
 	}
 	if ip != lastIP {
@@ -96,44 +181,47 @@ func checkIPChange() {
 	}
 }
 
-// 主函数
 func mainFunc() {
 	ip, err := getIP()
 	if err != nil {
-		fmt.Println("获取 IP 失败：", err)
+		log.Printf("获取 IP 失败：%v", err)
 		return
 	}
 	lastIP = ip
 	speedupResult, err := speedup()
 	if err != nil {
-		fmt.Println("提速请求异常：", err)
+		log.Printf("提速请求异常：%v", err)
 		return
 	}
 
 	if code, ok := speedupResult["code"].(float64); ok && code != 0 {
-		fmt.Println("提速请求异常，错误码：", code)
+		log.Printf("提速请求异常，错误码：%v", code)
 		return
 	}
 
 	isSpeedupSucceed, err := checkSpeedup()
 	if err != nil {
-		fmt.Println("检查提速状态失败：", err)
+		log.Printf("检查提速状态失败：%v", err)
 		return
 	}
 
 	if !isSpeedupSucceed {
-		fmt.Println("提速失败")
+		log.Println("提速失败")
 	} else {
-		fmt.Println("提速成功")
+		log.Println("提速成功")
 	}
 }
 
 func main() {
 	c := cron.New()
-	// 每 10 分钟检查 IP 变化
-	c.AddFunc("*/10 * * * *", checkIPChange)
+	// 每 20 分钟检查 IP 变化
+	if _, err := c.AddFunc("*/20 * * * *", checkIPChange); err != nil {
+		log.Printf("Error adding cron function: %v", err)
+	}
 	// 每周一 0 点运行
-	c.AddFunc("0 0 * * 1", mainFunc)
+	if _, err := c.AddFunc("0 0 * * 1", mainFunc); err != nil {
+		log.Printf("Error adding cron function: %v", err)
+	}
 	c.Start()
 
 	// 程序开始运行
