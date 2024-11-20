@@ -1,5 +1,5 @@
 # 构建阶段
-FROM golang:1.20-alpine AS builder
+FROM golang:1.21-alpine AS builder
 
 # 设置必要的编译环境
 RUN apk add --no-cache ca-certificates && \
@@ -7,6 +7,10 @@ RUN apk add --no-cache ca-certificates && \
 
 # 设置工作目录
 WORKDIR /build
+
+# 设置 Go 环境
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.cn,direct
 
 # 复制依赖文件
 COPY go.mod go.sum ./

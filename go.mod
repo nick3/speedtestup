@@ -1,6 +1,6 @@
 module speedup
 
-go 1.23.3
+go 1.21
 
 require github.com/robfig/cron/v3 v3.0.1
 
