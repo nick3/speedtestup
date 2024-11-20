@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
   workflow_dispatch:
 
@@ -11,20 +11,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, windows, darwin]
-        goarch: [amd64]
-        include:
-          - os: linux
-            output_name: speedup-linux-amd64
-            asset_name: speedup-linux-amd64
-          - os: windows
-            output_name: speedup-windows-amd64.exe
-            asset_name: speedup-windows-amd64.exe
-          - os: darwin
-            output_name: speedup-darwin-amd64
-            asset_name: speedup-darwin-amd64
 
     steps:
       - name: Checkout code
@@ -33,20 +19,28 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
-      - name: Build binary
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0  # 禁用 CGO，使用纯 Go 实现
-        run: go build -v -ldflags="-w -s" -o ${{ matrix.output_name }}
+      - name: Build all binaries
+        run: make build-all
 
-      - name: Upload build artifact
+      - name: Upload Linux build
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.output_name }}
+          name: speedup-linux-amd64
+          path: bin/speedup_linux
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: speedup-windows-amd64.exe
+          path: bin/speedup_windows.exe
+
+      - name: Upload MacOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: speedup-darwin-amd64
+          path: bin/speedup_darwin
 
   release:
     name: Create Release

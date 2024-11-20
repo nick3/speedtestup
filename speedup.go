@@ -215,6 +215,14 @@ func mainFunc() {
 }
 
 func main() {
+	// 检查是否有 --version 参数
+	for _, arg := range os.Args[1:] {
+		if arg == "--version" {
+			fmt.Println(GetVersionInfo())
+			return
+		}
+	}
+
 	c := cron.New()
 	// 每 10 分钟检查 IP 变化
 	if _, err := c.AddFunc("*/10 * * * *", checkIPChange); err != nil {

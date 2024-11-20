@@ -5,3 +5,5 @@
 /speedup.exe
 /src
 .vscode
+.DS_Store
+/bin

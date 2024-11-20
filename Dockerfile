@@ -2,7 +2,7 @@
 FROM golang:1.21-alpine AS builder
 
 # 设置必要的编译环境
-RUN apk add --no-cache ca-certificates && \
+RUN apk add --no-cache ca-certificates make && \
     apk add --no-cache tzdata
 
 # 设置工作目录
@@ -12,17 +12,11 @@ WORKDIR /build
 ENV GO111MODULE=on
 ENV GOPROXY=https://goproxy.cn,direct
 
-# 复制依赖文件
-COPY go.mod go.sum ./
-RUN go mod download
-
-# 复制源代码
+# 复制所有源代码和 Makefile
 COPY . .
 
-# 优化编译选项
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-w -s" \
-    -o speedup
+# 使用 Makefile 构建
+RUN make build
 
 # 运行阶段
 FROM alpine:3.18
@@ -31,8 +25,8 @@ FROM alpine:3.18
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
-# 复制编译好的二进制文件
-COPY --from=builder /build/speedup /app/speedup
+# 复制编译好的二进制文件（注意路径与 Makefile 中的输出路径一致）
+COPY --from=builder /build/bin/speedup /app/speedup
 
 # 设置工作目录
 WORKDIR /app
