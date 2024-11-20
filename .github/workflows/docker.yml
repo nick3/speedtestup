@@ -53,3 +53,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            GO111MODULE=on
+          # 添加构建缓存
+          cache-from: |
+            type=registry,ref=ghcr.io/nick3/speedtestup:buildcache
+          cache-to: |
+            type=registry,ref=ghcr.io/nick3/speedtestup:buildcache,mode=max
