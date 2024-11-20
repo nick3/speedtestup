@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 
@@ -113,8 +114,9 @@ func getIP() (string, error) {
 	funcs := []func() (string, error){getIPbyBaidu, getIPbyTencent, getIPbyIpip}
 
 	// Randomly shuffle the functions
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := len(funcs) - 1; i > 0; i-- {
-		j := time.Now().UnixNano() % int64(i+1)
+		j := r.Intn(i + 1)
 		funcs[i], funcs[j] = funcs[j], funcs[i]
 	}
 
@@ -214,8 +216,8 @@ func mainFunc() {
 
 func main() {
 	c := cron.New()
-	// 每 20 分钟检查 IP 变化
-	if _, err := c.AddFunc("*/20 * * * *", checkIPChange); err != nil {
+	// 每 10 分钟检查 IP 变化
+	if _, err := c.AddFunc("*/10 * * * *", checkIPChange); err != nil {
 		log.Printf("Error adding cron function: %v", err)
 	}
 	// 每周一 0 点运行
