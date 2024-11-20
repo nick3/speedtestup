@@ -64,7 +64,7 @@ go mod download
 - 本地运行：
 
 ```bash
-go run main.go
+go run speedup.go
 ```
 
 ### Docker 构建
