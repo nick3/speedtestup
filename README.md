@@ -22,11 +22,11 @@ SpeedTestUp 是一个自动化工具，用于定期检测网络状态并自动�
 
 ```bash
 # Linux/MacOS
-chmod +x speedup-*
-./speedup-*
+chmod +x speedup_*
+./speedup_*
 
 # Windows
-speedup-windows-amd64.exe
+speedup-windows.exe
 ```
 
 ### Docker 运行

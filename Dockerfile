@@ -2,7 +2,7 @@
 FROM golang:1.21-alpine AS builder
 
 # 设置必要的编译环境
-RUN apk add --no-cache ca-certificates make && \
+RUN apk add --no-cache ca-certificates make git && \
     apk add --no-cache tzdata
 
 # 设置工作目录
