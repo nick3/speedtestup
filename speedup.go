@@ -110,8 +110,15 @@ func getIPbyIpip() (string, error) {
 }
 
 func getIP() (string, error) {
-	// Create a slice of the getter functions
-	funcs := []func() (string, error){getIPbyBaidu, getIPbyTencent, getIPbyIpip}
+	// Create a slice of the getter functions with their names
+	funcs := []struct {
+		name string
+		fn   func() (string, error)
+	}{
+		{"百度", getIPbyBaidu},
+		{"腾讯", getIPbyTencent},
+		{"IPIP", getIPbyIpip},
+	}
 
 	// Randomly shuffle the functions
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -121,10 +128,10 @@ func getIP() (string, error) {
 	}
 
 	// Try each function in the shuffled order
-	for i, f := range funcs {
-		ip, err := f()
+	for _, f := range funcs {
+		ip, err := f.fn()
 		if err != nil {
-			log.Printf("Error getting IP from method %d: %v", i+1, err)
+			log.Printf("通过%s获取IP失败: %v", f.name, err)
 			continue
 		}
 		if ip != "" {
