@@ -59,33 +59,33 @@ func NewLogger(level, output, file string) (*Logger, error) {
 // Debug 输出调试日志
 func (l *Logger) Debug(format string, args ...interface{}) {
 	if l.level == LevelDebug {
-		l.logger.Printf("[DEBUG] "+format, args...)
+		l.logger.Printf(l.prefix+"[DEBUG] "+format, args...)
 	}
 }
 
 // Info 输出信息日志
 func (l *Logger) Info(format string, args ...interface{}) {
 	if l.level == LevelDebug || l.level == LevelInfo {
-		l.logger.Printf("[INFO] "+format, args...)
+		l.logger.Printf(l.prefix+"[INFO] "+format, args...)
 	}
 }
 
 // Warn 输出警告日志
 func (l *Logger) Warn(format string, args ...interface{}) {
 	if l.level == LevelDebug || l.level == LevelInfo || l.level == LevelWarn {
-		l.logger.Printf("[WARN] "+format, args...)
+		l.logger.Printf(l.prefix+"[WARN] "+format, args...)
 	}
 }
 
 // Error 输出错误日志
 func (l *Logger) Error(format string, args ...interface{}) {
-	l.logger.Printf("[ERROR] "+format, args...)
+	l.logger.Printf(l.prefix+"[ERROR] "+format, args...)
 }
 
 // Success 输出成功日志
 func (l *Logger) Success(format string, args ...interface{}) {
 	if l.level == LevelDebug || l.level == LevelInfo || l.level == LevelWarn {
-		l.logger.Printf("[SUCCESS] "+format, args...)
+		l.logger.Printf(l.prefix+"[SUCCESS] "+format, args...)
 	}
 }
 
