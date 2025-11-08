@@ -13,6 +13,13 @@ import (
 	"speedtestup/utils"
 )
 
+// 版本信息变量（通过 LDFLAGS 设置）
+var (
+	version    = "2.0.0"
+	buildDate  = "unknown"
+	commitHash = "unknown"
+)
+
 func main() {
 	// 解析命令行参数
 	var configPath string
@@ -23,7 +30,9 @@ func main() {
 
 	// 显示版本信息
 	if showVersion {
-		fmt.Println("SpeedTestUp v2.0")
+		fmt.Printf("SpeedTestUp v%s\n", version)
+		fmt.Printf("构建日期: %s\n", buildDate)
+		fmt.Printf("提交哈希: %s\n", commitHash)
 		fmt.Println("基于 luci-app-broadbandacc 架构重构的宽带提速工具")
 		return
 	}

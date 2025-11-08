@@ -20,7 +20,12 @@ type SpeedupService struct {
 
 // NewSpeedupService 创建新的提速服务实例
 func NewSpeedupService(speedTestCNClient *api.SpeedTestCNClient, cfg *config.Config) *SpeedupService {
-	logger, _ := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	logger, err := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	if err != nil {
+		// 无法初始化 logger 是一个严重问题，至少需要 panic 或返回错误
+		fmt.Printf("Failed to initialize logger for SpeedupService: %v\n", err)
+		panic(fmt.Sprintf("failed to initialize logger: %v", err))
+	}
 	logger = logger.WithPrefix("SpeedupService")
 
 	return &SpeedupService{

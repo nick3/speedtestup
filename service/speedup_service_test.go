@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"speedtestup/api"
 	"speedtestup/config"
@@ -33,7 +34,7 @@ func TestSpeedupService_ShouldSelfCheck(t *testing.T) {
 	cfg := config.NewDefaultConfig()
 	cfg.Speedup.SelfCheck.Enabled = true
 	speedTestCNClient := api.NewSpeedTestCNClient("")
-	speedupService := NewSpeedupService(speedupService, cfg)
+	speedupService := NewSpeedupService(speedTestCNClient, cfg)
 
 	// 初始状态下不应该执行自检
 	if speedupService.ShouldSelfCheck() {

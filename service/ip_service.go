@@ -19,7 +19,14 @@ type IPService struct {
 
 // NewIPService 创建新的 IP 服务实例
 func NewIPService(ipAPI *api.IPAPI, cfg *config.Config) *IPService {
-	logger, _ := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	logger, err := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	if err != nil {
+		// 至少在标准错误输出中打印一条日志
+		fmt.Printf("Failed to initialize logger for IPService: %v\n", err)
+		// 使用默认日志器或panic，根据业务逻辑决定
+		// 这里选择panic，因为日志器初始化失败是严重问题
+		panic(fmt.Sprintf("failed to initialize logger: %v", err))
+	}
 	logger = logger.WithPrefix("IPService")
 
 	return &IPService{
@@ -85,38 +92,49 @@ func (s *IPService) CheckIPChange() (bool, error) {
 // GetInterfaceIP 获取指定网络接口的 IP 地址
 // 对应 luci-app-broadbandacc 中的 get_bind_ip 函数
 func (s *IPService) GetInterfaceIP(interfaceName string) (string, error) {
-	// 在实际实现中，这里需要与系统网络接口交互
-	// 由于这是跨平台的 Go 实现，我们提供一个简化的版本
 	s.logger.Debug("尝试获取接口 %s 的 IP 地址", interfaceName)
 
-	// 这里可以根据不同操作系统实现不同的接口获取逻辑
-	// Linux: 使用 netlink 或 sysfs
-	// Windows: 使用 Windows API
-	// macOS: 使用系统调用
-
-	// 暂时返回一个示例实现
-	interfaces, err := net.InterfaceAddrs()
+	// 获取所有网络接口
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "", fmt.Errorf("获取网络接口列表失败: %v", err)
 	}
 
-	for _, addr := range interfaces {
-		ip, ok := addr.(*net.IPNet)
-		if !ok {
+	// 遍历网络接口
+	for _, iface := range interfaces {
+		// 如果指定了接口名称，匹配接口名称
+		if interfaceName != "" && iface.Name != interfaceName {
 			continue
 		}
 
-		// 过滤回环地址和 IPv6
-		if ip.IP.IsLoopback() || ip.IP.To4() == nil {
+		// 获取接口的地址
+		addrs, err := iface.Addrs()
+		if err != nil {
+			s.logger.Debug("获取接口 %s 地址失败: %v", iface.Name, err)
 			continue
 		}
 
-		// 这里可以根据接口名称过滤
-		// 在实际实现中，需要更复杂的逻辑来匹配接口名称
-		return ip.IP.String(), nil
+		// 遍历接口的地址
+		for _, addr := range addrs {
+			ip, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
+			}
+
+			// 过滤回环地址和 IPv6
+			if ip.IP.IsLoopback() || ip.IP.To4() == nil {
+				continue
+			}
+
+			s.logger.Debug("找到接口 %s 的 IP 地址: %s", iface.Name, ip.IP.String())
+			return ip.IP.String(), nil
+		}
 	}
 
-	return "", fmt.Errorf("未找到有效的网络接口 IP")
+	if interfaceName != "" {
+		return "", fmt.Errorf("未找到接口 %s 的有效网络 IP", interfaceName)
+	}
+	return "", fmt.Errorf("未找到任何有效的网络接口 IP")
 }
 
 // ResetIP 重置 IP 记录（用于测试或特殊情况）

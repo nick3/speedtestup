@@ -105,20 +105,20 @@ build_project() {
     LDFLAGS="-ldflags '-X main.version=$VERSION -X main.buildDate=$BUILD_DATE -X main.commitHash=$COMMIT_HASH'"
 
     # 构建当前平台
-    eval "go build $LDFLAGS -o speedup ./..."
+    eval "go build $LDFLAGS -o speedup ."
     log_info "当前平台构建完成: speedup"
 
     # 构建其他平台（可选）
     if [ "$1" = "all" ]; then
         log_step "构建所有平台..."
 
-        eval "GOOS=linux GOARCH=amd64 go build $LDFLAGS -o speedup-linux-amd64 -ldflags '-w -s' ./..."
+        eval "GOOS=linux GOARCH=amd64 go build $LDFLAGS -o speedup-linux-amd64 -ldflags '-w -s' ."
         log_info "Linux amd64 构建完成"
 
-        eval "GOOS=darwin GOARCH=amd64 go build $LDFLAGS -o speedup-darwin-amd64 -ldflags '-w -s' ./..."
+        eval "GOOS=darwin GOARCH=amd64 go build $LDFLAGS -o speedup-darwin-amd64 -ldflags '-w -s' ."
         log_info "Darwin amd64 构建完成"
 
-        eval "GOOS=windows GOARCH=amd64 go build $LDFLAGS -o speedup-windows-amd64.exe -ldflags '-w -s' ./..."
+        eval "GOOS=windows GOARCH=amd64 go build $LDFLAGS -o speedup-windows-amd64.exe -ldflags '-w -s' ."
         log_info "Windows amd64 构建完成"
     fi
 }

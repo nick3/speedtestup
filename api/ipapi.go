@@ -9,6 +9,14 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// 缓存正则表达式，避免重复编译
+var (
+	// 匹配空白字符的正则表达式
+	whitespaceRegex = regexp.MustCompile(`\s+`)
+	// 验证 IPv4 地址的正则表达式
+	ipRegex = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
+)
+
 // IPAPI IP 查询 API
 type IPAPI struct {
 	client *resty.Client
@@ -38,10 +46,9 @@ func (a *IPAPI) GetPublicIP() (string, error) {
 
 	ip := string(resp.Body())
 	// 清理 IP 字符串（移除可能的换行符和空格）
-	ip = regexp.MustCompile(`\s+`).ReplaceAllString(ip, "")
+	ip = whitespaceRegex.ReplaceAllString(ip, "")
 
 	// 验证 IP 格式
-	ipRegex := regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
 	if !ipRegex.MatchString(ip) {
 		return "", fmt.Errorf("获取的 IP 格式无效: %s", ip)
 	}

@@ -25,7 +25,12 @@ type Scheduler struct {
 
 // NewScheduler 创建新的调度器实例
 func NewScheduler(ipService *IPService, speedupService *SpeedupService, cfg *config.Config) *Scheduler {
-	logger, _ := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	logger, err := utils.NewLogger(cfg.Logging.Level, cfg.Logging.Output, cfg.Logging.File)
+	if err != nil {
+		// 无法初始化 logger 是一个严重问题，至少需要 panic 或返回错误
+		fmt.Printf("Failed to initialize logger for Scheduler: %v\n", err)
+		panic(fmt.Sprintf("failed to initialize logger: %v", err))
+	}
 	logger = logger.WithPrefix("Scheduler")
 
 	return &Scheduler{

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -21,6 +22,28 @@ func NewSpeedTestCNClient(bindIP string) *SpeedTestCNClient {
 		SetTimeout(30 * time.Second).
 		SetHeader("User-Agent", "SpeedTestUp/1.0")
 
+	// 如果设置了绑定 IP，创建自定义的 Transport
+	if bindIP != "" {
+		// 解析绑定的 IP 地址
+		localAddr, err := net.ResolveTCPAddr("tcp", bindIP+":0")
+		if err != nil {
+			// 如果解析失败，使用默认配置
+			fmt.Printf("Warning: Failed to parse bind IP %s: %v\n", bindIP, err)
+		} else {
+			// 创建自定义的 Dialer
+			dialer := &net.Dialer{
+				LocalAddr: localAddr,
+			}
+
+			// 设置自定义的 Transport
+			transport := &http.Transport{
+				DialContext: dialer.DialContext,
+			}
+
+			client.SetTransport(transport)
+		}
+	}
+
 	return &SpeedTestCNClient{
 		client: client,
 		bindIP: bindIP,
@@ -34,13 +57,6 @@ func (c *SpeedTestCNClient) QuerySpeedupStatus() (*SpeedupQueryResponse, error) 
 
 	req := c.client.R().
 		SetHeader("Content-Type", "application/json")
-
-	// 如果设置了绑定 IP，使用 --bind-address 参数
-	if c.bindIP != "" {
-		// 在实际实现中，Go 的 HTTP 客户端不支持直接的 --bind-address 参数
-		// 需要使用自定义的Dialer
-		req.SetQueryParam("bind_ip", c.bindIP)
-	}
 
 	resp, err := req.Get(url)
 	if err != nil {
@@ -67,11 +83,6 @@ func (c *SpeedTestCNClient) ReopenSpeedup() (*SpeedupReopenResponse, error) {
 
 	req := c.client.R().
 		SetHeader("Content-Type", "application/json")
-
-	// 如果设置了绑定 IP，使用 --bind-address 参数
-	if c.bindIP != "" {
-		req.SetQueryParam("bind_ip", c.bindIP)
-	}
 
 	resp, err := req.Get(url)
 	if err != nil {
@@ -238,8 +249,17 @@ func (r *SpeedupQueryResponse) IsUpSpeedupActive() (bool, error) {
 }
 
 // parseTimestamp 解析时间戳
+// 使用上海时区（speedtest.cn 服务器时区）以确保时间判断准确
 func parseTimestamp(timestampStr string) (time.Time, error) {
-	timestamp, err := time.Parse("2006-01-02 15:04:05", timestampStr)
+	// 加载上海时区
+	location, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		// 如果加载失败，使用本地时区
+		location = time.Local
+	}
+
+	// 使用指定时区解析时间
+	timestamp, err := time.ParseInLocation("2006-01-02 15:04:05", timestampStr, location)
 	if err != nil {
 		return time.Time{}, err
 	}

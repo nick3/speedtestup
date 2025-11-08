@@ -154,9 +154,9 @@ graph TD
 
 | 功能 | luci-app-broadbandacc | SpeedTestUp v2.0 |
 |------|----------------------|-------------------|
-| **IP 查询** | `ipinfo.io/ip/` | ✅ 相同 |
-| **提速查询** | `speedtest.cn/speedUp/query` | ✅ 相同 |
-| **重新开启提速** | `speedtest.cn/speedup/reopen` | ✅ 相同 |
+| **IP 查询** | `https://ipinfo.io/ip/` | ✅ 相同 |
+| **提速查询** | `https://tisu-api-v3.speedtest.cn/speedUp/query` | ✅ 相同 |
+| **重新开启提速** | `https://tisu-api.speedtest.cn/api/v2/speedup/reopen` | ✅ 相同 |
 | **IP 绑定** | `--bind-address` | ✅ 相同 |
 | **心跳检测** | 每 5 秒检测 | ✅ 优化为 10 分钟 |
 | **7 天自检** | `sleep 7d` | ✅ 相同 |

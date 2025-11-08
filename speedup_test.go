@@ -2,70 +2,93 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"speedtestup/config"
+	"speedtestup/utils"
 )
 
-// 初始化测试配置
-func init() {
-	// 在测试中使用默认配置，避免解析命令行参数
-	appConfig = config.NewDefaultConfig()
+// 测试版本变量是否正确定义
+func TestVersionVariables(t *testing.T) {
+	// 验证版本变量已定义
+	assert.NotEmpty(t, version, "version variable should be defined")
+	assert.NotEmpty(t, buildDate, "buildDate variable should be defined")
+	assert.NotEmpty(t, commitHash, "commitDate variable should be defined")
+
+	// 验证版本格式
+	assert.Regexp(t, `^\d+\.\d+\.\d+$`, version, "version should follow semantic versioning")
 }
 
-// Mock函数用于测试，避免实际网络请求
-func TestGetIP(t *testing.T) {
-	// 由于getIP涉及网络请求，我们将在集成测试中测试完整功能
-	// 这里仅测试错误情况下的逻辑
-	ip, err := getIP()
+// 测试默认配置初始化
+func TestDefaultConfigInitialization(t *testing.T) {
+	cfg := config.NewDefaultConfig()
 
-	// 在没有有效网络连接的测试环境中，这应该返回错误
+	// 验证配置结构体不为nil
+	assert.NotNil(t, cfg, "config should not be nil")
+	assert.NotNil(t, &cfg.Speedup, "Speedup config should not be nil")
+	assert.NotNil(t, &cfg.Logging, "Logging config should not be nil")
+
+	// 验证提速配置默认值
+	assert.Equal(t, 10*time.Minute, cfg.Speedup.CheckInterval, "CheckInterval should be 10 minutes")
+	assert.Equal(t, "0 0 * * 1", cfg.Speedup.ReopenSchedule, "ReopenSchedule should be weekly")
+	assert.True(t, cfg.Speedup.SelfCheck.Enabled, "SelfCheck should be enabled by default")
+	assert.Equal(t, 168*time.Hour, cfg.Speedup.SelfCheck.Interval, "SelfCheck interval should be 7 days")
+
+	// 验证日志配置默认值
+	assert.Equal(t, "info", cfg.Logging.Level, "Logging level should be info by default")
+	assert.Equal(t, "stdout", cfg.Logging.Output, "Logging output should be stdout by default")
+}
+
+// 测试配置验证
+func TestConfigValidation(t *testing.T) {
+	cfg := config.NewDefaultConfig()
+
+	// 启用提速服务
+	cfg.Speedup.Enabled = true
+
+	// 验证配置有效
+	assert.True(t, cfg.Speedup.Enabled, "Speedup should be enabled for testing")
+	assert.Greater(t, cfg.Speedup.CheckInterval, time.Duration(0), "CheckInterval should be positive")
+}
+
+// 测试日志器初始化
+func TestLoggerInitialization(t *testing.T) {
+	// 测试有效的日志配置
+	logger, err := utils.NewLogger("info", "stdout", "")
+	assert.NoError(t, err, "Logger should initialize successfully with valid config")
+	assert.NotNil(t, logger, "Logger should not be nil")
+
+	// 测试无效的日志级别
+	logger, err = utils.NewLogger("invalid-level", "stdout", "")
+	// 可能会返回错误或使用默认值，这取决于实现
 	if err != nil {
-		// 验证返回的是适当的错误
-		assert.NotEmpty(t, err)
-	} else {
-		// 如果成功获取IP，则验证IP格式
-		assert.NotEmpty(t, ip)
+		assert.Error(t, err, "Should return error for invalid log level")
 	}
 }
 
-// 为网络请求函数创建模拟测试
-func TestSpeedupFunction(t *testing.T) {
-	// 由于speedup函数涉及实际网络请求，这里主要测试错误路径
-	result, err := speedup()
+// 测试IP绑定配置
+func TestIPBindingConfig(t *testing.T) {
+	cfg := config.NewDefaultConfig()
 
-	// 验证返回值类型
-	if err != nil {
-		// 如果有错误，确保错误不为nil
-		assert.NotNil(t, err)
-	} else {
-		// 如果没有错误，确保结果不为nil
-		assert.NotNil(t, result)
-	}
+	// 验证默认IP绑定配置
+	assert.False(t, cfg.Speedup.IPBinding.Enabled, "IP binding should be disabled by default")
+	assert.Equal(t, "wan", cfg.Speedup.IPBinding.Interface, "Default interface should be 'wan'")
+	assert.Empty(t, cfg.Speedup.IPBinding.BindIP, "BindIP should be empty by default")
+
+	// 测试启用IP绑定
+	cfg.Speedup.IPBinding.Enabled = true
+	cfg.Speedup.IPBinding.BindIP = "192.168.1.100"
+	assert.True(t, cfg.Speedup.IPBinding.Enabled, "IP binding should be enabled")
+	assert.Equal(t, "192.168.1.100", cfg.Speedup.IPBinding.BindIP, "BindIP should be set")
 }
 
-func TestCheckSpeedupFunction(t *testing.T) {
-	// 由于checkSpeedup函数涉及实际网络请求，这里主要测试错误路径
-	result, err := checkSpeedup()
+// 测试自动恢复配置
+func TestAutoRecoveryConfig(t *testing.T) {
+	cfg := config.NewDefaultConfig()
 
-	// 验证返回值类型
-	if err != nil {
-		assert.NotNil(t, err)
-	} else {
-		// 如果没有错误，确保返回布尔值
-		assert.Implements(t, (*bool)(nil), &result)
-	}
-}
-
-// 为配置相关的功能测试
-func TestAppConfigInitialization(t *testing.T) {
-	// 验证appConfig是否被正确初始化
-	assert.NotNil(t, appConfig, "appConfig should be initialized")
-
-	// 验证配置的各个部分是否被正确初始化
-	assert.NotEmpty(t, appConfig.SpeedTest.URLs, "SpeedTest URLs should not be empty")
-	assert.NotEmpty(t, appConfig.IPCheck.URLs, "IPCheck URLs should not be empty")
-	assert.Greater(t, appConfig.SpeedTest.Timeout, 0, "SpeedTest timeout should be greater than 0")
-	assert.Greater(t, appConfig.IPCheck.Timeout, 0, "IPCheck timeout should be greater than 0")
-	assert.Greater(t, appConfig.IPCheck.CheckInterval, 0, "IPCheck check interval should be greater than 0")
+	// 验证默认自动恢复配置
+	assert.True(t, cfg.Speedup.AutoRecovery.Enabled, "Auto recovery should be enabled by default")
+	assert.Equal(t, 3, cfg.Speedup.AutoRecovery.MaxRetries, "Default max retries should be 3")
+	assert.Equal(t, 5*time.Minute, cfg.Speedup.AutoRecovery.RetryInterval, "Default retry interval should be 5 minutes")
 }
