@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  speedtestup:
+    image: ghcr.io/nick3/speedtestup:latest
+    container_name: speedtestup
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - speedtestup-network
+
+networks:
+  speedtestup-network:
+    driver: bridge
