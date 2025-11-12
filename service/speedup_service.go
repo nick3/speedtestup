@@ -78,8 +78,17 @@ func (s *SpeedupService) Execute() error {
 
 	// 4. 检查提速是否成功
 	if !queryResp.IsSpeedupAvailable() {
-		s.logger.Warn("网络不支持提速")
-		return fmt.Errorf("网络不支持提速")
+		// 如果CanSpeed为0，检查是否有有效的带宽数据
+		// 这可能表示已经处于提速状态
+		hasBandwidth := queryResp.Data.Download > 0 || queryResp.Data.TargetUpH > 0 || queryResp.Data.TargetUp100 > 0
+
+		if hasBandwidth {
+			s.logger.Warn("当前已处于提速状态（CanSpeed=0但检测到带宽数据）")
+			s.logger.Info("可能原因：当前线路已提速，或接口返回CanSpeed=0表示无需重复提速")
+		} else {
+			s.logger.Error("网络不支持提速")
+			return fmt.Errorf("网络不支持提速")
+		}
 	}
 
 	// 5. 检查上行和下行提速状态
