@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -22,22 +23,22 @@ func TestNewSpeedTestCNClient(t *testing.T) {
 func TestSpeedupQueryResponse_IsSpeedupAvailable(t *testing.T) {
 	resp := &SpeedupQueryResponse{
 		Data: struct {
-			IP            string `json:"ip"`
-			UpdatedAt     string `json:"updatedAt"`
-			CanSpeed      int    `json:"canSpeed"`
-			Download      int    `json:"download"`
-			DownExpire    string `json:"downExpire"`
-			DownExpireT   string `json:"downExpireT"`
-			TargetUpH     int    `json:"targetUpH"`
-			UpHExpire     string `json:"upHExpire"`
-			UpHExpireT    string `json:"upHExpireT"`
-			TargetUp100   int    `json:"targetUp100"`
-			Up100Expire   string `json:"up100Expire"`
-			Up100ExpireT  string `json:"up100ExpireT"`
-			DownUp50Expire  string `json:"downUp50Expire"`
-			DownUp50ExpireT string `json:"downUp50ExpireT"`
-			DownUpExpire  string `json:"downUpExpire"`
-			DownUpExpireT string `json:"downUpExpireT"`
+			IP            string      `json:"ip"`
+			UpdatedAt     string      `json:"updatedAt"`
+			CanSpeed      int         `json:"canSpeed"`
+			Download      int         `json:"download"`
+			DownExpire    string      `json:"downExpire"`
+			DownExpireT   json.Number `json:"downExpireT"`
+			TargetUpH     int         `json:"targetUpH"`
+			UpHExpire     string      `json:"upHExpire"`
+			UpHExpireT    json.Number `json:"upHExpireT"`
+			TargetUp100   int         `json:"targetUp100"`
+			Up100Expire   string      `json:"up100Expire"`
+			Up100ExpireT  json.Number `json:"up100ExpireT"`
+			DownUp50Expire  string      `json:"downUp50Expire"`
+			DownUp50ExpireT json.Number `json:"downUp50ExpireT"`
+			DownUpExpire  string      `json:"downUpExpire"`
+			DownUpExpireT json.Number `json:"downUpExpireT"`
 		}{
 			CanSpeed: 1,
 		},
@@ -56,22 +57,22 @@ func TestSpeedupQueryResponse_IsSpeedupAvailable(t *testing.T) {
 func TestSpeedupQueryResponse_GetBandwidth(t *testing.T) {
 	resp := &SpeedupQueryResponse{
 		Data: struct {
-			IP            string `json:"ip"`
-			UpdatedAt     string `json:"updatedAt"`
-			CanSpeed      int    `json:"canSpeed"`
-			Download      int    `json:"download"`
-			DownExpire    string `json:"downExpire"`
-			DownExpireT   string `json:"downExpireT"`
-			TargetUpH     int    `json:"targetUpH"`
-			UpHExpire     string `json:"upHExpire"`
-			UpHExpireT    string `json:"upHExpireT"`
-			TargetUp100   int    `json:"targetUp100"`
-			Up100Expire   string `json:"up100Expire"`
-			Up100ExpireT  string `json:"up100ExpireT"`
-			DownUp50Expire  string `json:"downUp50Expire"`
-			DownUp50ExpireT string `json:"downUp50ExpireT"`
-			DownUpExpire  string `json:"downUpExpire"`
-			DownUpExpireT string `json:"downUpExpireT"`
+			IP            string      `json:"ip"`
+			UpdatedAt     string      `json:"updatedAt"`
+			CanSpeed      int         `json:"canSpeed"`
+			Download      int         `json:"download"`
+			DownExpire    string      `json:"downExpire"`
+			DownExpireT   json.Number `json:"downExpireT"`
+			TargetUpH     int         `json:"targetUpH"`
+			UpHExpire     string      `json:"upHExpire"`
+			UpHExpireT    json.Number `json:"upHExpireT"`
+			TargetUp100   int         `json:"targetUp100"`
+			Up100Expire   string      `json:"up100Expire"`
+			Up100ExpireT  json.Number `json:"up100ExpireT"`
+			DownUp50Expire  string      `json:"downUp50Expire"`
+			DownUp50ExpireT json.Number `json:"downUp50ExpireT"`
+			DownUpExpire  string      `json:"downUpExpire"`
+			DownUpExpireT json.Number `json:"downUpExpireT"`
 		}{
 			Download:     100,
 			TargetUpH:    2048,
@@ -80,14 +81,30 @@ func TestSpeedupQueryResponse_GetBandwidth(t *testing.T) {
 	}
 
 	if resp.GetDownloadBandwidth() != 100 {
-		t.Errorf("Expected download bandwidth %d, got %d", 100, resp.GetDownloadBandwidth())
+		t.Errorf("Expected GetDownloadBandwidth to return 100, got %d", resp.GetDownloadBandwidth())
 	}
 
-	if resp.GetUpHBandwidth() != 2 { // 2048 / 1024
-		t.Errorf("Expected upH bandwidth %d, got %d", 2, resp.GetUpHBandwidth())
+	if resp.GetUpHBandwidth() != 2 {
+		t.Errorf("Expected GetUpHBandwidth to return 2, got %d", resp.GetUpHBandwidth())
 	}
 
-	if resp.GetUp100Bandwidth() != 5 { // 5120 / 1024
-		t.Errorf("Expected up100 bandwidth %d, got %d", 5, resp.GetUp100Bandwidth())
+	if resp.GetUp100Bandwidth() != 5 {
+		t.Errorf("Expected GetUp100Bandwidth to return 5, got %d", resp.GetUp100Bandwidth())
+	}
+}
+
+func TestSpeedupReopenResponse(t *testing.T) {
+	resp := &SpeedupReopenResponse{
+		Code:    0,
+		Message: "success",
+		Data: struct {
+			Result string `json:"result"`
+		}{
+			Result: "ok",
+		},
+	}
+
+	if resp.Code != 0 || resp.Message != "success" || resp.Data.Result != "ok" {
+		t.Error("SpeedupReopenResponse fields do not match expected values")
 	}
 }
