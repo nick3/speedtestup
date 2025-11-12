@@ -112,23 +112,23 @@ type SpeedupQueryResponse struct {
 		CanSpeed    int    `json:"canSpeed"`    // 是否可以提速 (0: 不支持, 1: 支持)
 		Download    int    `json:"download"`    // 下行带宽 (Mbps)
 		DownExpire  string `json:"downExpire"`  // 下行提速截止时间
-		DownExpireT json.Number `json:"downExpireT"` // 下行提速截止时间 (时间戳，可能是数字或字符串)
+		DownExpireT interface{} `json:"downExpireT"` // 下行提速截止时间 (时间戳，可能是数字、字符串或bool)
 
 		// 上行带宽信息
 		TargetUpH     int    `json:"targetUpH"`     // 一类上行带宽 (Kbps)
 		UpHExpire     string `json:"upHExpire"`     // 一类上行带宽提速截止时间
-		UpHExpireT    json.Number `json:"upHExpireT"`    // 一类上行带宽提速截止时间 (时间戳)
+		UpHExpireT    interface{} `json:"upHExpireT"`    // 一类上行带宽提速截止时间 (时间戳)
 
 		TargetUp100   int    `json:"targetUp100"`   // 二类上行带宽 (Kbps)
 		Up100Expire   string `json:"up100Expire"`   // 二类上行带宽提速截止时间
-		Up100ExpireT  json.Number `json:"up100ExpireT"`  // 二类上行带宽提速截止时间 (时间戳)
+		Up100ExpireT  interface{} `json:"up100ExpireT"`  // 二类上行带宽提速截止时间 (时间戳)
 
 		// 套餐信息
 		DownUp50Expire  string `json:"downUp50Expire"`  // 一类套餐带宽上行+下行提速截止时间
-		DownUp50ExpireT json.Number `json:"downUp50ExpireT"` // 一类套餐带宽上行+下行提速截止时间 (时间戳)
+		DownUp50ExpireT interface{} `json:"downUp50ExpireT"` // 一类套餐带宽上行+下行提速截止时间 (时间戳)
 
 		DownUpExpire  string `json:"downUpExpire"`  // 二类套餐带宽上行+下行提速截止时间
-		DownUpExpireT json.Number `json:"downUpExpireT"` // 二类套餐带宽上行+下行提速截止时间 (时间戳)
+		DownUpExpireT interface{} `json:"downUpExpireT"` // 二类套餐带宽上行+下行提速截止时间 (时间戳)
 	} `json:"data"`
 }
 
@@ -250,12 +250,32 @@ func (r *SpeedupQueryResponse) IsUpSpeedupActive() (bool, error) {
 
 // parseTimestamp 解析时间戳
 // 使用上海时区（speedtest.cn 服务器时区）以确保时间判断准确
-func parseTimestamp(timestampNum json.Number) (time.Time, error) {
-	// 先将 json.Number 转换为字符串
-	timestampStr := timestampNum.String()
+func parseTimestamp(timestampVal interface{}) (time.Time, error) {
+	var timestampStr string
 
-	// 如果值为 "false"，表示未开通提速
-	if timestampStr == "false" {
+	// 根据类型转换值
+	switch v := timestampVal.(type) {
+	case string:
+		timestampStr = v
+	case float64:
+		// 数字类型（时间戳），转换为整数字符串
+		timestampStr = fmt.Sprintf("%.0f", v)
+	case bool:
+		// bool类型，false 表示未开通提速
+		if !v {
+			return time.Time{}, nil // 返回零值时间
+		}
+		return time.Time{}, fmt.Errorf("unexpected bool value: %v", v)
+	case json.Number:
+		timestampStr = v.String()
+	case nil:
+		return time.Time{}, nil // nil 也视为未开通
+	default:
+		return time.Time{}, fmt.Errorf("unsupported timestamp type: %T", timestampVal)
+	}
+
+	// 如果值为 "false" 或为空，表示未开通提速
+	if timestampStr == "" || timestampStr == "false" {
 		return time.Time{}, nil // 返回零值时间
 	}
 

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"testing"
 )
 
@@ -28,17 +27,17 @@ func TestSpeedupQueryResponse_IsSpeedupAvailable(t *testing.T) {
 			CanSpeed      int         `json:"canSpeed"`
 			Download      int         `json:"download"`
 			DownExpire    string      `json:"downExpire"`
-			DownExpireT   json.Number `json:"downExpireT"`
+			DownExpireT   interface{} `json:"downExpireT"`
 			TargetUpH     int         `json:"targetUpH"`
 			UpHExpire     string      `json:"upHExpire"`
-			UpHExpireT    json.Number `json:"upHExpireT"`
+			UpHExpireT    interface{} `json:"upHExpireT"`
 			TargetUp100   int         `json:"targetUp100"`
 			Up100Expire   string      `json:"up100Expire"`
-			Up100ExpireT  json.Number `json:"up100ExpireT"`
+			Up100ExpireT  interface{} `json:"up100ExpireT"`
 			DownUp50Expire  string      `json:"downUp50Expire"`
-			DownUp50ExpireT json.Number `json:"downUp50ExpireT"`
+			DownUp50ExpireT interface{} `json:"downUp50ExpireT"`
 			DownUpExpire  string      `json:"downUpExpire"`
-			DownUpExpireT json.Number `json:"downUpExpireT"`
+			DownUpExpireT interface{} `json:"downUpExpireT"`
 		}{
 			CanSpeed: 1,
 		},
@@ -62,17 +61,17 @@ func TestSpeedupQueryResponse_GetBandwidth(t *testing.T) {
 			CanSpeed      int         `json:"canSpeed"`
 			Download      int         `json:"download"`
 			DownExpire    string      `json:"downExpire"`
-			DownExpireT   json.Number `json:"downExpireT"`
+			DownExpireT   interface{} `json:"downExpireT"`
 			TargetUpH     int         `json:"targetUpH"`
 			UpHExpire     string      `json:"upHExpire"`
-			UpHExpireT    json.Number `json:"upHExpireT"`
+			UpHExpireT    interface{} `json:"upHExpireT"`
 			TargetUp100   int         `json:"targetUp100"`
 			Up100Expire   string      `json:"up100Expire"`
-			Up100ExpireT  json.Number `json:"up100ExpireT"`
+			Up100ExpireT  interface{} `json:"up100ExpireT"`
 			DownUp50Expire  string      `json:"downUp50Expire"`
-			DownUp50ExpireT json.Number `json:"downUp50ExpireT"`
+			DownUp50ExpireT interface{} `json:"downUp50ExpireT"`
 			DownUpExpire  string      `json:"downUpExpire"`
-			DownUpExpireT json.Number `json:"downUpExpireT"`
+			DownUpExpireT interface{} `json:"downUpExpireT"`
 		}{
 			Download:     100,
 			TargetUpH:    2048,
