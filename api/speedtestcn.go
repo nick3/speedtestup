@@ -58,6 +58,12 @@ func (c *SpeedTestCNClient) QuerySpeedupStatus() (*SpeedupQueryResponse, error) 
 	req := c.client.R().
 		SetHeader("Content-Type", "application/json")
 
+	// 打印调试信息
+	// fmt.Printf("[DEBUG] QuerySpeedupStatus URL: %s\n", url)
+	// if c.bindIP != "" {
+	// 	fmt.Printf("[DEBUG] 使用绑定的IP: %s\n", c.bindIP)
+	// }
+
 	resp, err := req.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("请求提速查询接口失败: %v", err)
@@ -66,6 +72,10 @@ func (c *SpeedTestCNClient) QuerySpeedupStatus() (*SpeedupQueryResponse, error) 
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("提速查询接口返回错误，状态码: %d", resp.StatusCode())
 	}
+
+	// 打印原始响应内容用于调试
+	bodyStr := string(resp.Body())
+	fmt.Printf("[DEBUG] API原始返回内容: %s\n", bodyStr)
 
 	var data SpeedupQueryResponse
 	err = json.Unmarshal(resp.Body(), &data)
@@ -249,6 +259,7 @@ func (r *SpeedupQueryResponse) IsUpSpeedupActive() (bool, error) {
 }
 
 // parseTimestamp 解析时间戳
+// 支持两种格式：Unix时间戳（秒数）或日期时间字符串
 // 使用上海时区（speedtest.cn 服务器时区）以确保时间判断准确
 func parseTimestamp(timestampVal interface{}) (time.Time, error) {
 	var timestampStr string
@@ -258,8 +269,14 @@ func parseTimestamp(timestampVal interface{}) (time.Time, error) {
 	case string:
 		timestampStr = v
 	case float64:
-		// 数字类型（时间戳），转换为整数字符串
-		timestampStr = fmt.Sprintf("%.0f", v)
+		// Unix时间戳（秒数），直接转换
+		return time.Unix(int64(v), 0), nil
+	case int64:
+		// Unix时间戳（秒数），直接转换
+		return time.Unix(v, 0), nil
+	case int:
+		// Unix时间戳（秒数），直接转换
+		return time.Unix(int64(v), 0), nil
 	case bool:
 		// bool类型，false 表示未开通提速
 		if !v {
@@ -267,6 +284,12 @@ func parseTimestamp(timestampVal interface{}) (time.Time, error) {
 		}
 		return time.Time{}, fmt.Errorf("unexpected bool value: %v", v)
 	case json.Number:
+		// 尝试解析为Unix时间戳
+		if ts, err := v.Int64(); err == nil {
+			// 如果是纯数字，按Unix时间戳处理
+			return time.Unix(ts, 0), nil
+		}
+		// 否则按字符串处理
 		timestampStr = v.String()
 	case nil:
 		return time.Time{}, nil // nil 也视为未开通
@@ -286,7 +309,7 @@ func parseTimestamp(timestampVal interface{}) (time.Time, error) {
 		location = time.Local
 	}
 
-	// 使用指定时区解析时间
+	// 使用指定时区解析时间字符串
 	timestamp, err := time.ParseInLocation("2006-01-02 15:04:05", timestampStr, location)
 	if err != nil {
 		return time.Time{}, err
