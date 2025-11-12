@@ -1,6 +1,7 @@
 {
   "speedup": {
     "check_interval": "10m",
+    "status_check_interval": "2h",
     "reopen_schedule": "0 0 * * 1",
     "ip_binding": {
       "enabled": false,
@@ -16,7 +17,7 @@
       "enabled": true,
       "interval": "168h"
     },
-    "enabled": false,
+    "enabled": true,
     "down_acc": true,
     "up_acc": true,
     "logging": false,

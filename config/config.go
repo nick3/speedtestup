@@ -15,8 +15,11 @@ type Config struct {
 
 // SpeedupConfig 提速服务配置
 type SpeedupConfig struct {
-	// 检测间隔
+	// 检测间隔（心跳检测，检查IP变化）
 	CheckInterval time.Duration `json:"check_interval" yaml:"check_interval"`
+
+	// 提速状态检查间隔（检查提速是否失效，最长1天）
+	StatusCheckInterval time.Duration `json:"status_check_interval" yaml:"status_check_interval"`
 
 	// 重新开启提速的定时任务（cron 表达式）
 	ReopenSchedule string `json:"reopen_schedule" yaml:"reopen_schedule"`
@@ -72,6 +75,7 @@ func NewDefaultConfig() *Config {
 
 	// 设置默认提速配置
 	cfg.Speedup.CheckInterval = 10 * time.Minute
+	cfg.Speedup.StatusCheckInterval = 2 * time.Hour // 每2小时检查一次提速状态
 	cfg.Speedup.ReopenSchedule = "0 0 * * 1" // 每周一 0:00
 
 	// 设置默认 IP 绑定配置

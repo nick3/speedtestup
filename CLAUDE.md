@@ -63,6 +63,7 @@ graph TD
 2. **核心功能**：
    - ✅ IP 绑定机制（绑定到指定网络接口）
    - ✅ 心跳检测（每 10 分钟检查 IP 变化）
+   - ✅ **提速状态自动检测**（每 2 小时检查提速是否失效，可配置，最长 1 天）
    - ✅ 自动恢复策略（失败自动重试）
    - ✅ 7 天自检机制（每周一 0:00 自检）
    - ✅ 详细的日志输出
@@ -92,7 +93,8 @@ graph TD
     "enabled": true,           // 启用提速服务
     "down_acc": true,          // 启用下行提速
     "up_acc": true,            // 启用上行提速
-    "check_interval": "10m",   // 检测间隔
+    "check_interval": "10m",   // 心跳检测间隔（检查IP变化）
+    "status_check_interval": "2h",  // 提速状态检查间隔（检查提速是否失效，最长1天）
     "reopen_schedule": "0 0 * * 1",  // 重新开启提速定时任务
     "ip_binding": {
       "enabled": false,        // 启用 IP 绑定

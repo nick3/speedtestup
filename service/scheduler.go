@@ -162,6 +162,42 @@ func (s *Scheduler) startReopenSchedule() {
 	s.logger.Debug("重新开启提速任务已添加")
 }
 
+// shouldCheckSpeedupStatus 判断是否应该检查提速状态
+func (s *Scheduler) shouldCheckSpeedupStatus() bool {
+	// 如果 StatusCheckInterval 为 0，表示禁用状态检查
+	if s.config.StatusCheckInterval <= 0 {
+		s.logger.Debug("提速状态检查已禁用")
+		return false
+	}
+
+	// 限制最长检查间隔为 24 小时（确保能在 1 天内检查）
+	maxInterval := 24 * time.Hour
+	if s.config.StatusCheckInterval > maxInterval {
+		s.config.StatusCheckInterval = maxInterval
+	}
+
+	// 检查是否到了应该检查状态的时间
+	// 这里我们根据心跳检测的间隔来触发，确保不会超过配置的检查间隔
+	// 因为心跳检测每 10 分钟运行一次，我们可以计算需要多少次心跳后才检查状态
+	checkIntervalMinutes := int(s.config.StatusCheckInterval.Minutes())
+	heartbeatMinutes := int(s.config.CheckInterval.Minutes())
+
+	if heartbeatMinutes <= 0 {
+		heartbeatMinutes = 10 // 默认 10 分钟
+	}
+
+	// 计算需要多少次心跳检测后才检查一次状态
+	heartbeatCount := checkIntervalMinutes / heartbeatMinutes
+	if heartbeatCount <= 0 {
+		heartbeatCount = 1
+	}
+
+	// 使用随机或简单的计数方式来避免每次都检查
+	// 这里我们使用当前时间戳来简化判断
+	timeStamp := time.Now().Unix()
+	return (timeStamp/int64(heartbeatMinutes))%int64(heartbeatCount) == 0
+}
+
 // heartbeatCheck 心跳检测任务
 // 对应 luci-app-broadbandacc 中的 _keepalive 函数
 func (s *Scheduler) heartbeatCheck() {
@@ -174,7 +210,7 @@ func (s *Scheduler) heartbeatCheck() {
 		return
 	}
 
-	// 2. 如果 IP 发生变化，重新执行提速
+	// 2. 如果 IP 发生变化，重新执行提速（立即执行）
 	if ipChanged {
 		s.logger.Info("IP 发生变化，重新执行提速...")
 		if err := s.speedupService.Execute(); err != nil {
@@ -185,7 +221,25 @@ func (s *Scheduler) heartbeatCheck() {
 		return
 	}
 
-	// 3. 如果设置了 IP 绑定，验证绑定状态
+	// 3. 检查提速状态是否失效（根据配置的间隔）
+	if s.shouldCheckSpeedupStatus() {
+		s.logger.Debug("检查提速状态是否有效...")
+		speedupActive, err := s.speedupService.QueryStatus()
+		if err != nil {
+			s.logger.Error("查询提速状态失败: %v", err)
+		} else if !speedupActive {
+			s.logger.Warn("检测到提速已失效，重新执行提速...")
+			if err := s.speedupService.Execute(); err != nil {
+				s.logger.Error("提速恢复失败: %v", err)
+			} else {
+				s.logger.Success("提速恢复成功")
+			}
+		} else {
+			s.logger.Debug("提速状态正常")
+		}
+	}
+
+	// 4. 如果设置了 IP 绑定，验证绑定状态
 	if s.config.IPBinding.Enabled {
 		currentIP, err := s.ipService.GetCurrentIP()
 		if err != nil {
