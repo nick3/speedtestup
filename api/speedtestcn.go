@@ -73,10 +73,6 @@ func (c *SpeedTestCNClient) QuerySpeedupStatus() (*SpeedupQueryResponse, error) 
 		return nil, fmt.Errorf("提速查询接口返回错误，状态码: %d", resp.StatusCode())
 	}
 
-	// 打印原始响应内容用于调试
-	bodyStr := string(resp.Body())
-	fmt.Printf("[DEBUG] API原始返回内容: %s\n", bodyStr)
-
 	var data SpeedupQueryResponse
 	err = json.Unmarshal(resp.Body(), &data)
 	if err != nil {
